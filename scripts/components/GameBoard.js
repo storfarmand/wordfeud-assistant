@@ -8,9 +8,9 @@ import * as GameActions from '../actions/GameActions';
 
 export default class GamesBoard extends React.Component {
 
-  constructor() {
-    super();
-
+  constructor(props) {
+    super(props);
+    this.dictionary = props.dictionary;
     this.letters = new Array(15);
     for (let c=0; c <= 14; c++) {
       this.letters[c] = new Array(15);
@@ -59,9 +59,9 @@ export default class GamesBoard extends React.Component {
   getTile(tiles, col, row) {
     this.letters[col][row] = this.getLetter(tiles, col, row);
     const value = this.letters[col][row].length > 0 ? this.getValue(this.letters[col][row]).value : 0;
-    const lastPlayed = this.props.game.last_move.move.filter(move => {
+    const lastPlayed = this.props.game.last_move.move_type === 'move' ? this.props.game.last_move.move.filter(move => {
       return move[0] === col && move[1] === row
-    });
+    }) : [];
     return <span class={lastPlayed.length > 0 ? 'last-played' : ''}>{this.letters[col][row]}{value > 0 ? <sub>{value}</sub> : ''}</span>
   }
 
@@ -103,9 +103,9 @@ export default class GamesBoard extends React.Component {
     return words;
   }
 
-  getAdjacentTiles(tiles) {
+  getAnchors(tiles) {
 
-    let adjTiles = [];
+    let anchors = [];
     for (let c = 0; c < 15; c++) {
       for (let r = 0; r < 15; r++) {
         const found = tiles.filter(tile => {
@@ -115,7 +115,7 @@ export default class GamesBoard extends React.Component {
                     return c === tileX[0] && r === tileX[1]
                   }).length === 0)
         });
-        found.length > 0 && adjTiles.push([c,r]);
+        found.length > 0 && anchors.push([c,r]);
       }
     }
     for (let r = 0; r < 15; r++) {
@@ -127,18 +127,39 @@ export default class GamesBoard extends React.Component {
                     return c === tileX[0] && r === tileX[1]
                   }).length === 0)
         });
-        found.length > 0 && (' ' + adjTiles.join(' | ') + ' ').indexOf(' ' + c + ',' + r + ' ') < 0 && adjTiles.push([c,r]);
+        found.length > 0 && (' ' + anchors.join(' | ') + ' ').indexOf(' ' + c + ',' + r + ' ') < 0 && anchors.push([c,r]);
       }
     }
-    return adjTiles;
+    return anchors;
 
   }
 
-  findWords(rack, adjTiles, board, tiles) {
-    console.log('rack', rack);
-    console.log('adjTiles', adjTiles);
-    console.log('board', board);
-    console.log('tiles', tiles);
+  findWords(rack, anchors, board, tiles) {
+    anchors.forEach(anchor => {
+      const anchorCol = anchor[0];
+      const anchorRow = anchor[1];
+      const that = this;
+        rack.forEach(rackTile => {
+          const newTiles = tiles.concat([[anchorCol, anchorRow, rackTile, false]]);
+          const updatedWords = this.sweepBoard(newTiles);
+          if (updatedWords.filter(word => {
+            return this.dictionary.indexOf(word.toLowerCase()) === -1;
+          }).length > 0) return;
+          const newWords = updatedWords.filter(word => {
+            return this.words.indexOf(word) === -1;
+          })
+          newWords.length && console.log({col: anchorCol, row: anchorRow, newWords: newWords});
+        });
+    });
+  }
+
+  getLastMove() {
+      return (
+        this.props.game.last_move.move_type === 'move' ? this.props.game.last_move.points :
+        this.props.game.last_move.move_type === 'swap' ? 'Swapped ' + this.props.game.last_move.tile_count + ' tiles' :
+        this.props.game.last_move.move_type === 'pass' ? 'Passed' :
+        'Unknown'
+      )
   }
 
   render() {
@@ -181,12 +202,15 @@ export default class GamesBoard extends React.Component {
         </li>;
     });
     this.words = this.sweepBoard(this.props.game.tiles);
+    console.log('words', this.words);
     this.missingWords = this.words.filter(word => {
-      return this.props.dictionary.words.indexOf(word.toLowerCase()) === -1;
+      return this.props.dictionary.indexOf(word.toLowerCase()) === -1;
     });
     console.log('missing words', this.missingWords);
-    this.adjTiles = this.getAdjacentTiles(this.props.game.tiles);
-    const newWords = this.findWords(rack, this.adjTiles, this.props.board, this.props.game.tiles);
+    this.anchors = this.getAnchors(this.props.game.tiles);
+    console.log('anchors', this.anchors);
+    const newWords = this.findWords(rack, this.anchors, this.props.board, this.props.game.tiles);
+    console.log('newWords', newWords);
     return (
       <div class="game-board">
         <ul class="score">
@@ -194,8 +218,8 @@ export default class GamesBoard extends React.Component {
           <li>{this.props.game.players[1].username} ({this.props.game.players[1].score})</li>
         </ul>
         <ul class="score-last">
-          <li>{this.props.game.current_player === 1 && this.props.game.last_move.points}</li>
-          <li>{this.props.game.current_player === 0 && this.props.game.last_move.points}</li>
+          <li>{this.props.game.current_player === 1 && this.getLastMove()}</li>
+          <li>{this.props.game.current_player === 0 && this.getLastMove()}</li>
         </ul>
         <ul class="tiles">
           {tiles}
@@ -210,9 +234,7 @@ export default class GamesBoard extends React.Component {
           </ul>
         </div>
         <Hints
-          board={this.props.board}
-          tiles={this.props.game.tiles}
-          rack={rack}
+          words={newWords}
         />
       </div>
     );

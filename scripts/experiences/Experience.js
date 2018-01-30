@@ -74,7 +74,7 @@ export default class Experience extends React.Component {
                       game={this.state.game}
                       board={this.state.board}
                       letters={this.props.constants.letters}
-                      dictionary={this.props.words}
+                      dictionary={this.props.dictionary}
                     />;
         break;
       default:
