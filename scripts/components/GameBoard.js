@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Draggable from 'gsap/Draggable';
+import { countCombinations } from '../helpers.js';
 
 import Hints from './Hints';
 
@@ -21,24 +22,6 @@ export default class GamesBoard extends React.Component {
     this.words = [];
   }
 
-  componentDidMount() {
-    const rackTiles = ReactDOM.findDOMNode(this.rack).querySelectorAll('.tile');
-
-    this.draggable = Draggable.create(rackTiles, {
-      onDragStart: () => {
-        console.log(this.draggable);
-      },
-      onDragEnd: () => {
-        console.log(this.draggable);
-
-      }
-    });
-
-  }
-
-  componentWillMount() {
-  }
-
   gotoGame(obj) {
     GameActions.getGame(obj);
   }
@@ -46,19 +29,26 @@ export default class GamesBoard extends React.Component {
   getValue(boardLetter) {
     return this.props.letters.filter(letter => {
         return letter.letter === boardLetter;
-    })[0];
+    })[0].value;
+  }
+
+  getWordValue(word) {
+    let totalValue = 0;
+    [...word].forEach(c => totalValue += this.getValue(c));
+    return totalValue;
   }
 
   getLetter(tiles, col, row) {
     const found = tiles.filter(tile => {
         return tile[0] === col && tile[1] === row;
     });
-    return found.length > 0 ? found[0][2] : '';
+    return found.length > 0 ? {'letter': found[0][2], 'value': found[0][3] === true ? 0 : this.getValue(found[0][2]) } : {'letter': '', 'value': 0};
   }
 
   getTile(tiles, col, row) {
-    this.letters[col][row] = this.getLetter(tiles, col, row);
-    const value = this.letters[col][row].length > 0 ? this.getValue(this.letters[col][row]).value : 0;
+    const letterObj = this.getLetter(tiles, col, row);
+    this.letters[col][row] = letterObj.letter;
+    const value = letterObj.value;
     const lastPlayed = this.props.game.last_move.move_type === 'move' ? this.props.game.last_move.move.filter(move => {
       return move[0] === col && move[1] === row
     }) : [];
@@ -135,6 +125,7 @@ export default class GamesBoard extends React.Component {
   }
 
   findWords(rack, anchors, board, tiles) {
+    let foundWords = [];
     anchors.forEach(anchor => {
       const anchorCol = anchor[0];
       const anchorRow = anchor[1];
@@ -148,9 +139,15 @@ export default class GamesBoard extends React.Component {
           const newWords = updatedWords.filter(word => {
             return this.words.indexOf(word) === -1;
           })
-          newWords.length && console.log({col: anchorCol, row: anchorRow, newWords: newWords});
+          if (newWords.length) {
+            console.log({col: anchorCol, row: anchorRow, newWords: newWords})
+            newWords.forEach(word => {
+              foundWords.push(word);
+            })
+          }
         });
     });
+    return foundWords;
   }
 
   getLastMove() {
@@ -163,6 +160,7 @@ export default class GamesBoard extends React.Component {
   }
 
   render() {
+    console.log('game tiles', this.props.game.tiles);
     const tiles = this.props.board
       .map((col, rIdx) => {
         return col.map((tile, cIdx) => {
@@ -188,6 +186,17 @@ export default class GamesBoard extends React.Component {
     const rack = this.props.game.players.filter(player => {
       return player.rack ? true : false;
     })[0].rack;
+    console.log('rack', rack);
+    const wordsInRack = countCombinations(rack).filter(word => {
+      return this.dictionary.indexOf(word.toLowerCase()) >= 0;
+    });
+    const wordsInRackWithPoints = wordsInRack.map(word => {
+      return {
+        word,
+        points: this.getWordValue(word)
+      }
+    }).sort((a, b) => a.points < b.points ? 1 : -1);
+    console.log('words in rack', wordsInRackWithPoints);
     const myRack = rack.map((letter, lIdx) => {
         const value = this.getValue(letter).value;
         return <li

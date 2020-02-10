@@ -9,7 +9,7 @@ class WordfeudService {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json')
     let wfRequest = {
-      uri: 'http://localhost/api.php?action=login&email=' + email + '&password=' + password,
+      uri: 'http://localhost:8080/api.php?action=login&email=' + email + '&password=' + password,
       options: {
         method: 'POST',
         headers: headers
@@ -28,7 +28,7 @@ class WordfeudService {
     const headers = new Headers();
     headers.append('Content-Type', 'application/json')
     let wfRequest = {
-      uri: 'http://localhost/api.php?action=gamesList&sessionId=' + sessionId,
+      uri: 'http://localhost:8080/api.php?action=gamesList&sessionId=' + sessionId,
       options: {
         method: 'POST',
         headers: headers
@@ -47,7 +47,7 @@ class WordfeudService {
       const headers = new Headers();
       headers.append('Content-Type', 'application/json');
       let wfRequest = {
-        uri: 'http://localhost/api.php?action=getGame&sessionId=' + sessionId + '&gameId=' + gameId,
+        uri: 'http://localhost:8080/api.php?action=getGame&sessionId=' + sessionId + '&gameId=' + gameId,
         options: {
           method: 'POST',
           headers: headers
@@ -67,7 +67,7 @@ class WordfeudService {
       const headers = new Headers();
       headers.append('Content-Type', 'application/json');
       let wfRequest = {
-        uri: 'http://localhost/api.php?action=getBoard&sessionId=' + sessionId + '&boardId=' + boardId,
+        uri: 'http://localhost:8080/api.php?action=getBoard&sessionId=' + sessionId + '&boardId=' + boardId,
         options: {
           method: 'POST',
           headers: headers

@@ -1,7 +1,7 @@
 const constants = {
   experienceId: 'Wordfeud Helper',
   endpoint: {
-    url: "http://localhost/api.php"
+    url: "http://localhost:8080/api.php"
   },
   target: {
     selector: ".app"
